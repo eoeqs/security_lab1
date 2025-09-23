@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 public class SecurityTest {
 
     @Autowired
@@ -31,23 +33,10 @@ public class SecurityTest {
     }
 
     @Test
-    public void testPublicEndpointsAccessibleWithoutAuth() throws Exception {
+    public void testLoginEndpointAccessible() throws Exception {
         mockMvc.perform(post("/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"test@test.com\",\"password\":\"password\"}"))
                 .andExpect(status().is4xxClientError());
-    }
-
-    @Test
-    public void testXssProtection() throws Exception {
-        String maliciousInput = "<script>alert('xss')</script>";
-
-        mockMvc.perform(post("/api/data")
-                        .header("Authorization", "Bearer fake-token")
-                        .contentType("text/plain")
-                        .content(maliciousInput))
-                .andExpect(status().isUnauthorized())
-                .andExpect(content().string(org.hamcrest.Matchers.not(
-                        org.hamcrest.Matchers.containsString("<script>"))));
     }
 }

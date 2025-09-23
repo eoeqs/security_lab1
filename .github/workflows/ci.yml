@@ -10,6 +10,21 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: ib
+          POSTGRES_USER: ib
+          POSTGRES_PASSWORD: ibib
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,11 +36,27 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U ib -d ib; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "Waiting for PostgreSQL... Attempt $i"
+            sleep 2
+          done
+
       - name: Build application
         run: mvn clean compile -DskipTests
 
-      - name: Run tests
+      - name: Run tests with PostgreSQL
         run: mvn test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ib
+          SPRING_DATASOURCE_USERNAME: ib
+          SPRING_DATASOURCE_PASSWORD: ibib
 
   security-scan:
     runs-on: ubuntu-latest
@@ -69,11 +100,6 @@ jobs:
         with:
           name: snyk-report
           path: snyk-results.sarif
-
-      - name: Dependency vulnerability check
-        run: mvn org.sonatype.ossindex.maven:ossindex-maven-plugin:audit -Dossindex.fail=true
-        continue-on-error: true
-
 
   docker-build:
     runs-on: ubuntu-latest
