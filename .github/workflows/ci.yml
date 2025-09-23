@@ -53,25 +53,37 @@ jobs:
       - name: Build for security analysis
         run: mvn compile -DskipTests
 
-      - name: SAST - Run SpotBugs analysis
+      - name: SAST - Generate SpotBugs HTML report
         run: |
-          mvn spotbugs:spotbugs || echo "SpotBugs found issues, continuing..."
-          mvn spotbugs:check || echo "SpotBugs check failed, continuing..."
+          # Генерируем HTML отчет SpotBugs
+          mvn spotbugs:spotbugs -Dspotbugs.htmlOutput=true -Dspotbugs.htmlOutputDirectory=target/spotbugs-html
         continue-on-error: true
 
-      - name: SAST - Upload SpotBugs report
+      - name: SAST - Run SpotBugs check
+        run: |
+          mvn spotbugs:check || echo "SpotBugs check completed with findings"
+        continue-on-error: true
+
+      - name: SAST - Upload SpotBugs XML report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: spotbugs-report
+          name: spotbugs-xml-report
           path: target/spotbugs/
+
+      - name: SAST - Upload SpotBugs HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spotbugs-html-report
+          path: target/spotbugs-html/
 
       - name: Install Snyk CLI
         run: |
           npm install -g snyk
           snyk --version
 
-      - name: SCA - Run Snyk security scan (Maven)
+      - name: SCA - Run Snyk security scan
         run: |
           export JAVA_HOME=${JAVA_HOME}
           echo "Using JAVA_HOME: $JAVA_HOME"
@@ -90,6 +102,7 @@ jobs:
       - name: Security scan summary
         run: |
           echo "=== Security Scan Summary ==="
-          echo "SpotBugs: Completed"
-          echo "Snyk: Completed"
+          echo "SpotBugs: XML and HTML reports generated"
+          echo "Snyk: Vulnerability assessment completed"
           echo "All reports available as artifacts"
+
