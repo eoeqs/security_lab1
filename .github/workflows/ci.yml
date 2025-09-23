@@ -7,7 +7,7 @@ on:
     branches: [ '**' ]
 
 jobs:
-  security-scan:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,18 +21,81 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build and security scan
+      - name: Build application (skip tests)
+        run: mvn clean compile -DskipTests
+
+      - name: Package application
+        run: mvn package -DskipTests
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build for security analysis
+        run: mvn compile -DskipTests
+
+      - name: SAST - Run SpotBugs analysis
         run: |
-          mvn clean compile -DskipTests
-          mvn spotbugs:spotbugs -DskipTests
-          mvn spotbugs:check -DskipTests
+          mvn spotbugs:spotbugs
+          mvn spotbugs:check
         continue-on-error: true
 
-      - name: Upload security reports
+      - name: SAST - Upload SpotBugs report
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: security-reports
-          path: |
-            target/spotbugs/
-          retention-days: 30
+          name: spotbugs-report
+          path: target/spotbugs/
+
+      - name: SCA - Run Snyk security scan
+        uses: snyk/actions/maven@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk-results.sarif
+        continue-on-error: true
+
+      - name: SCA - Upload Snyk report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: snyk-report
+          path: snyk-results.sarif
+
+      - name: Security scan summary
+        run: |
+          echo "Security scanning completed!"
+          echo "SpotBugs and Snyk reports are available as artifacts"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: docker build -t secure-api:latest .
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        if: github.ref == 'refs/heads/main'
