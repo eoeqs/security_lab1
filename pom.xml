@@ -24,7 +24,6 @@
         <postgresql.version>42.7.3</postgresql.version>
         <spotbugs.version>4.9.4</spotbugs.version>
         <spotbugs-maven-plugin.version>4.9.4.0</spotbugs-maven-plugin.version>
-        <commons-lang3.version>3.17.1</commons-lang3.version>
     </properties>
 
     <dependencies>
@@ -144,15 +143,7 @@
                                 <requireJavaVersion>
                                     <version>17</version>
                                 </requireJavaVersion>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <exclude>org.apache.commons:commons-lang3:3.17.0</exclude>
-                                        <exclude>org.apache.httpcomponents.client5:httpclient5:5.4.2</exclude>
-                                    </excludes>
-                                    <includes>
-                                        <include>org.apache.commons:commons-lang3:[3.17.1]</include>
-                                    </includes>
-                                </bannedDependencies>
+
                             </rules>
                         </configuration>
                     </execution>
@@ -161,20 +152,6 @@
         </plugins>
     </build>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents.client5</groupId>
-                <artifactId>httpclient5</artifactId>
-                <version>5.4.4</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <repositories>
         <repository>
