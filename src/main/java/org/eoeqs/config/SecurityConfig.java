@@ -19,16 +19,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserDetailsServiceImpl userDetailsService;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private UserDetailsServiceImpl userDetailsService;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(
-            UserDetailsServiceImpl userDetailsService,
-            JwtAuthenticationFilter jwtAuthenticationFilter
-    ) {
-        this.userDetailsService = userDetailsService;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
