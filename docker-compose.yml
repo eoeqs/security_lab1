@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  dev-pg12:
+    container_name: security1
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ib
+      POSTGRES_USER: ib
+      POSTGRES_PASSWORD: ibib
+    volumes:
+      - dev-db-volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ib -d ib"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    networks:
+      - secure-api-network
+
+  secure-api-app:
+    container_name: secure-api-app
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://dev-pg12:5432/ib
+      SPRING_DATASOURCE_USERNAME: ib
+      SPRING_DATASOURCE_PASSWORD: ibib
+      SPRING_JWT_SECRET_KEY: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+      SPRING_JWT_EXPIRATION: "86400000"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      dev-pg12:
+        condition: service_healthy
+    networks:
+      - secure-api-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+volumes:
+  dev-db-volume: {}
+
+networks:
+  secure-api-network:
+    driver: bridge
