@@ -14,9 +14,7 @@ public class DataController {
     @GetMapping("/data")
     public ResponseEntity<List<Map<String, String>>> getData() {
         List<Map<String, String>> data = List.of(
-                Map.of("id", "1", "content", HtmlUtils.htmlEscape("Sample data 1 <script>alert('xss')</script>")),
-                Map.of("id", "2", "content", HtmlUtils.htmlEscape("Sample data 2")),
-                Map.of("id", "3", "content", HtmlUtils.htmlEscape("Sample data 3"))
+                Map.of("id", "1", "content", HtmlUtils.htmlEscape("Sample data 1 <script>alert('xss')</script>"))
         );
         return ResponseEntity.ok(data);
     }
